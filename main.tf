@@ -44,7 +44,7 @@ resource "aws_subnet" "vpn_public" {
   }
 }
 
-# Private Subnets for VPN VPC (for Transit Gateway)
+# Private Subnets for Transit Gateway
 resource "aws_subnet" "vpn_private" {
   count                   = length(var.availability_zones)
   vpc_id                  = aws_vpc.vpn_vpc.id
@@ -62,7 +62,7 @@ resource "aws_route_table" "vpn_public" {
   vpc_id = aws_vpc.vpn_vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block = "0.0.0.0/0" # production은 워크 스페이스, 집 ip로 접근 제한 필요
     gateway_id = aws_internet_gateway.vpn_igw.id
   }
 
@@ -75,7 +75,7 @@ resource "aws_route_table" "vpn_public" {
 resource "aws_route_table" "vpn_private" {
   vpc_id = aws_vpc.vpn_vpc.id
 
-  # No routes initially - will be updated by Transit Gateway project
+  # Transit gateway가 자동 생성
   
   tags = {
     Name = "vpn-private-route-table"
@@ -107,8 +107,7 @@ resource "aws_security_group" "vpn_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Consider restricting to your admin IP
-  }
+    cidr_blocks = ["0.0.0.0/0"]  # 워크스페이스, 집 ip로 접근 제한 해야 할듯
 
   # OpenVPN UDP
   ingress {
@@ -131,7 +130,7 @@ resource "aws_security_group" "vpn_sg" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Consider restricting to your admin IP
+    cidr_blocks = ["0.0.0.0/0"] 
   }
 
   # Allow all outbound traffic
@@ -150,7 +149,7 @@ resource "aws_security_group" "vpn_sg" {
 # EC2 Instance for OpenVPN
 resource "aws_instance" "openvpn" {
   ami                    = var.openvpn_ami # OpenVPN AMI
-  instance_type          = "t3.small"
+  instance_type          = "t2.small"
   subnet_id              = aws_subnet.vpn_public[0].id
   vpc_security_group_ids = [aws_security_group.vpn_sg.id]
   key_name               = var.key_name
