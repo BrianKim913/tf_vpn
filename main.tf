@@ -108,7 +108,7 @@ resource "aws_security_group" "vpn_sg" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]  # 워크스페이스, 집 ip로 접근 제한 해야 할듯
-
+  }
   # OpenVPN UDP
   ingress {
     from_port   = 1194
